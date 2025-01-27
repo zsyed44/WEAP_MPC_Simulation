@@ -1,5 +1,5 @@
 # The following code was imported from the following repository:
-# https://github.com/mcarfagno/mpc_python/tree/master?tab=readme-ov-file
+# https://github.com/mcarfagno/mpc_python
 # This file in specific has not been modified, but has been commented for readability
 
 import numpy as np
