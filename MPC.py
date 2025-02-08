@@ -1,3 +1,10 @@
+# ===============================================================
+# Zain Syed, February 2025
+# MPC Controller for a Car Following a given path, for WEAP
+# I HIGHLY RECOMMEND READING THEORY.md BEFORE READING THIS CODE
+# ===============================================================
+
+
 import numpy as np
 import cvxpy as cp
 import matplotlib.pyplot as plt
@@ -20,14 +27,14 @@ B = np.array([[0.5*timeStep**2, 0],
               [timeStep, 0],
               [0, timeStep]])
 
-# MPC cost weights
-Q = np.diag([1, 1, 0.1, 0.1])
-R = np.diag([0.01, 0.01])
-Qf = Q  # terminal cost
+# MPC cost weights, penalizing deviations from the reference trajectory
+stateCost = np.diag([1, 1, 0.6, 0.6])
+inputCost = np.diag([0.01, 0.01])
+terminalCost = stateCost 
 
 # Predefine a circular reference path.
 R0 = 10.0           # radius of the circle
-v_des = 1.0         # desired constant speed along the path
+v_des = 1.75         # desired constant speed along the path
 
 # Precompute a reference trajectory that covers the full simulation (plus horizon)
 # Each reference state is [x_ref, y_ref, vx_ref, vy_ref].
@@ -67,13 +74,13 @@ for t in range(totalSteps):
     # Build cost and dynamics constraints for each step in the horizon
     for k in range(horizonLength):
         ref_state = ref_traj[t + k]  # reference state at time t+k
-        cost += cp.quad_form(x[:, k] - ref_state, Q) + cp.quad_form(u[:, k], R)
+        cost += cp.quad_form(x[:, k] - ref_state, stateCost) + cp.quad_form(u[:, k], inputCost)
         constraints += [x[:, k+1] == A @ x[:, k] + B @ u[:, k]]
         constraints += [u[:, k] <= u_max, u[:, k] >= u_min]
     
     # Terminal cost at time t+N
     ref_state_terminal = ref_traj[t + horizonLength]
-    cost += cp.quad_form(x[:, horizonLength] - ref_state_terminal, Qf)
+    cost += cp.quad_form(x[:, horizonLength] - ref_state_terminal, terminalCost)
     
     # Solve the MPC optimization problem
     prob = cp.Problem(cp.Minimize(cost), constraints)
