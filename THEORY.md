@@ -2,7 +2,7 @@
 
 ## Basic MPC Parameters:
 For the sake of this project, I am currently using the following parameters:<br>
-- A Time Step of 0.1 seconds | How often our simulation will update, this can be altered to be longer, or even work with distance as opposed to time
+- A Time Step of 0.1 seconds | How often our simulation will update, this can be altered to be longer, or even work with distance as opposed to time (this will represent dt in the upcoming steps)
 - 100 Total Steps, this is how many 0.1 second bursts our program will fun for, this value is not at all rigid and will vary based on track length
 - A Horizon Length of 10, this essentially means we are looking and calculation 10 steps ahead, meaning we will make decisions one second prior to being in a particular state
 
@@ -86,6 +86,12 @@ Again, we can justify this, the first and second row outline the change in posit
 Now we finally have our final equation for the Discrete-Time Model, this will allow us to calculate ahead of time, and figure out potential future position, velocity, and acceleration values based on information gathered from out horizon.
 
 $$M[k+1] = A = \begin{bmatrix} 1&0&dt&0\\0&1&0&dt\\0&0&1&0\\ 0&0&0&1 \end{bmatrix}M[k] + \begin{bmatrix} 0.5dt^2&0\\0&0.5dt^2\\dt&0\\0&dt \end{bmatrix}C[k]$$
+
+<br>
+
+***To maintain code clarity, we will be using the timeStep variable to represent dt, because thats all dt is, a single step of time***
+
+
 
 ## MPC Cost Function Weights:
 The three things we have defined are State Cost, Input/Control Cost, & Terminal Cost.<br><br>
