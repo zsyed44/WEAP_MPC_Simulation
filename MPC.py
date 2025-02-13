@@ -12,6 +12,7 @@ from matplotlib.patches import Rectangle
 from scipy.interpolate import CubicSpline
 
 
+# ---------------- Path Drawing ----------------
 
 def draw_track():
     """
@@ -31,7 +32,7 @@ def draw_track():
 # It also allows us to more accurately simulate the car's pathfinding algorithm which will be guided by a series of 2D Vectors
 track = draw_track()
 
-
+# Calculates the distance between each pair of points on the track, and adds them all to one cumulative arc length
 dists = [0]
 for i in range(1, len(track)):
     dists.append(dists[-1] + np.linalg.norm(track[i] - track[i-1]))
@@ -39,23 +40,25 @@ dists = np.array(dists)
 
 '''
 Cublic Splines are cubic functions used to interpolate between points, maintaining smoothness
-between the points. This is useful for creating the paths for this project. Cubic Splines are explained in
-more detail in the Theory document.
-
-For the sake of development of the actual car, we may want to consider using a different approach as
-this may have a little too much computaitonal complexity.
+between the points. This is useful for creating the paths for this project.
 '''
+# Uses the cubic spline function to interpolate between the points on the track
 cs_x = CubicSpline(dists, track[:, 0])
 cs_y = CubicSpline(dists, track[:, 1])
 # We also can define a circle radius value if we wish, however our paths are straight lines, so it isn't necessary
 
+
+
+
+# ---------------- MPC Controller ----------------
 
 # Simulation parameters
 timeStep = 0.1 # time step (seconds), how often our simulation will update
 totalSteps = 1000 # total simulation steps, how long the simulation will run
 horizonLength = 10 # MPC horizon (number of steps), how far ahead the controller plans
 
-# 2D double integrator model:
+
+# 2D double-integrator model:
 # State: [x, y, vx, vy]; Control: [ax, ay]
 A = np.array([[1, 0, timeStep, 0],
               [0, 1, 0, timeStep],
@@ -65,6 +68,8 @@ B = np.array([[0.5*timeStep**2, 0],
               [0, 0.5*timeStep**2],
               [timeStep, 0],
               [0, timeStep]])
+
+
 
 # MPC cost weights, penalizes deviations from the reference trajectory (the vectorized path)
 stateCost = np.diag([1, 1, 0.6, 0.6])
@@ -77,9 +82,9 @@ desiredVelocity = 2.5
 # Precompute the reference trajectory along the drawn track.
 # For each simulation time (plus horizon), compute the reference state.
 # We use s = v_des * t (i.e., the distance along the track increases at constant speed).
-ref_traj = np.zeros((totalSteps + horizonLength + 1, 4))
+ref_traj = np.zeros((totalSteps + horizonLength + 1, 4)) # 4x4 Array to store the reference trajectory at each time step (+ the horizon)
 for i in range(totalSteps + horizonLength + 1):
-    t = i * timeStep
+    t = i * timeStep # Current time
     s = desiredVelocity * t  # arc-length traveled along the track
 
     # If s exceeds the maximum distance of the drawn track, hold the last point.
@@ -95,7 +100,7 @@ for i in range(totalSteps + horizonLength + 1):
     vy_ref = cs_y.derivative()(s)
     
     # Optionally normalize the velocity to the desired speed.
-    speed = np.hypot(vx_ref, vy_ref)
+    speed = np.hypot(vx_ref, vy_ref) # Calculates magnitue of the velocity vector
     if speed > 1e-3:
         vx_ref = desiredVelocity * vx_ref / speed
         vy_ref = desiredVelocity * vy_ref / speed
@@ -113,24 +118,25 @@ state_history = []
 x_current = np.array([track[0, 0], track[0, 1], 0, 0])
 state_history.append(x_current)
 
+# Iterates through the simulation steps
 for t in range(totalSteps):
     # Define cvxpy variables for the state and control over the horizon.
-    x = cp.Variable((4, horizonLength+1))
-    u = cp.Variable((2, horizonLength))
+    x = cp.Variable((4, horizonLength+1)) # Array to store the state at each time step
+    u = cp.Variable((2, horizonLength)) # Array to store the control input at each time step
     
     cost = 0
     constraints = []
     
-    # Initial condition for the horizon.
+    # Initial condition for the horizon. ensuring the first state in the horizon = the current state
     constraints += [x[:, 0] == x_current]
     
     # Build the cost function and dynamics constraints over the horizon.
     for k in range(horizonLength):
-        ref_state = ref_traj[t + k]
-        cost += cp.quad_form(x[:, k] - ref_state, stateCost) + cp.quad_form(u[:, k], inputCost)
-        constraints += [x[:, k+1] == A @ x[:, k] + B @ u[:, k]]
+        ref_state = ref_traj[t + k] # The reference state at the current step in the horizon
+        cost += cp.quad_form(x[:, k] - ref_state, stateCost) + cp.quad_form(u[:, k], inputCost) # Adds a penalty to any deviation from the reference state and control input
+        constraints += [x[:, k+1] == A @ x[:, k] + B @ u[:, k]] # Constraints on the state dynamics
         constraints += [u[:, k] <= np.array([1.0, 1.0]),
-                        u[:, k] >= np.array([-1.0, -1.0])]
+                        u[:, k] >= np.array([-1.0, -1.0])] # Constraints on the control inputs (between -1 & 1)
     
     # Terminal cost for the final state in the horizon.
     ref_state_terminal = ref_traj[t + horizonLength]
