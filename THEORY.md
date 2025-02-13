@@ -117,17 +117,15 @@ The **reference trajectory** is a series of desired states that the controller a
 In english, our reference trajectory is just the track (Or in our case the 64-long vectorized path)
 
 We define the arc-length as  
-$$
-s = v_{des} \cdot t,
-$$  
+$$s = v_{des} \cdot t$$  
 where:
-- \( v_{des} \) is the desired constant speed,
-- \( t \) is the elapsed time.
+- $v_{des}$ is the desired constant speed,
+- $t$ is the elapsed time.
 
 The interpolated reference state at time \( t \) is then given by:
-$$
-M_{ref}(t) = \begin{bmatrix} x_{ref}(t) \\ y_{ref}(t) \\ v_{x,ref}(t) \\ v_{y,ref}(t) \end{bmatrix},
-$$
+
+$$M_{ref}(t) = \begin{bmatrix} x_{ref}(t) \\\ y_{ref}(t) \\\ v_{x,ref}(t) \\\ v_{y,ref}(t) \end{bmatrix}$$
+
 with:
 - $\left( x_{ref}(t) = cs_x(s) \right)$,
 - $\left( y_{ref}(t) = cs_y(s) \right)$,
@@ -144,7 +142,8 @@ The optimization is subject to the discrete-time dynamics of our 2D double-integ
 $$M[k+1] = A\, M[k] + B\, C[k]$$
 with the matrices defined as:
 
-$$A = \begin{bmatrix} 1 & 0 & dt & 0 \\ 0 & 1 & 0 & dt \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{bmatrix}, \quad B = \begin{bmatrix} 0.5\,dt^2 & 0 \\ 0 & 0.5\,dt^2 \\ dt & 0 \\ 0 & dt \end{bmatrix}$$
+$$A = \begin{bmatrix} 1 & 0 & dt & 0 \\\ 0 & 1 & 0 & dt \\\ 0 & 0 & 1 & 0 \\\ 0 & 0 & 0 & 1 \end{bmatrix}, \quad B = \begin{bmatrix} 0.5dt^2 & 0 \\\ 0 & 0.5dt^2 \\\ dt & 0 \\\ 0 & dt \end{bmatrix}$$
+
 Here, $ dt $ is the time step between consecutive states.
 
 Additional constraints are imposed on the control inputs to ensure they remain within allowable bounds:
@@ -161,7 +160,8 @@ A key feature of MPC is its **receding horizon** (or moving horizon) strategy:
 
 - **Optimization at Each Time Step:**  
   At time step $k$, the controller solves the optimization problem over the next $N$ steps, generating an optimal sequence of control inputs:
-  $$\{ C[k], C[k+1], \dots, C[k+N-1] \}$$
+  
+  $$\\{C[k], C[k+1], \dots, C[k+N-1]\\}$$
 
 - **Implementation of the First Control Action:**  
   Only the first control input $C[k]$ is applied to the system. The state is updated, and the optimization is resolved at the next time step $k+1$ using the new state information.
@@ -174,46 +174,31 @@ A key feature of MPC is its **receding horizon** (or moving horizon) strategy:
 
 ## Summary
 
-In summary:
+This document explains the main ideas behind the Model Predictive Controller (MPC) used to guide a car along a user-defined track. The key points are:
 
 - **Basic MPC Parameters:**
-  - **Time Step (dt):** The simulation updates every 0.1 seconds. This parameter defines how frequently the controller updates and can be adjusted as needed.
-  - **Total Steps:** The simulation runs for a fixed number of steps (e.g., 100 or 1000), which may be adapted based on the track length or desired simulation duration.
-  - **Horizon Length:** The controller plans ahead for 10 time steps, meaning it optimizes its control actions over a 1-second future window at each iteration.
+  - **Time Step (dt):** The controller updates every 0.1 seconds, meaning it recalculates its actions at each step.
+  - **Total Steps:** The simulation runs for a fixed number of steps (for example, 100 or 1000), which you can adjust based on the desired simulation duration.
+  - **Horizon Length:** The controller looks ahead 10 steps (about 1 second into the future) to plan its actions.
 
 - **2D Double-Integrator Model:**
-  - **State Representation:**  
-    The car's state is defined as: $M(t) = \begin{bmatrix} x(t) \\ y(t) \\ v_x(t) \\ v_y(t) \end{bmatrix}$ 
-    
-    where \(x(t)\) and \(y(t)\) denote the position, and \(v_x(t)\) and \(v_y(t)\) denote the velocity components.
-
+  - **State Description:**  
+    The car’s state is described by its position (where it is) and its velocity (how fast it’s moving and in what direction).
   - **Control Input:**  
-    The control (acceleration) is represented by:
-    $C(t) = \begin{bmatrix} a_x(t) \\ a_y(t) \end{bmatrix}$
-  - **Continuous-Time Dynamics:**  
-    The evolution of the state is modeled by:
-    $\frac{d}{dt}M(t) = F\, M(t) + G\, C(t)$
-    with
-    $$F = \begin{bmatrix} 0 & 0 & 1 & 0 \\[4mm] 0 & 0 & 0 & 1 \\[4mm] 0 & 0 & 0 & 0 \\[4mm] 0 & 0 & 0 & 0 \end{bmatrix}, \quad
-    G = \begin{bmatrix} 0 & 0 \\[4mm] 0 & 0 \\[4mm] 1 & 0 \\[4mm] 0 & 1 \end{bmatrix}$$
-  - **Discrete-Time Model:**  
-    By discretizing with a time step $dt$, we obtain:
-
-    $$M[k+1] = A\, M[k] + B\, C[k],$$
-    where
-    $$A = \begin{bmatrix} 1 & 0 & dt & 0 \\[4mm] 0 & 1 & 0 & dt \\[4mm] 0 & 0 & 1 & 0 \\[4mm] 0 & 0 & 0 & 1 \end{bmatrix}, \quad
-    B = \begin{bmatrix} 0.5\,dt^2 & 0 \\[4mm] 0 & 0.5\,dt^2 \\[4mm] dt & 0 \\[4mm] 0 & dt \end{bmatrix}.$$
+    The controller influences the car by changing its acceleration (how quickly it speeds up or slows down) in both horizontal directions.
+  - **Dynamics:**  
+    In simple terms, the car’s next position is determined by adding the distance it travels (based on its current speed) to its current position. The speed is updated by considering the applied acceleration over the time step.
 
 - **MPC Cost Function and Receding Horizon Strategy:**
-  - The controller minimizes a cost function that penalizes the deviation of the state from a reference trajectory (weighted by \( Q \) and \( Q_f \)) as well as the magnitude of the control inputs (weighted by \( R \)).
-  - Only the first control input from the optimized sequence is applied at each time step. Then the optimization problem is re-solved at the next time step with the updated state, allowing the controller to adapt to any disturbances or changes in the system.
+  - **Cost Function:**  
+    The controller tries to minimize errors by balancing two things:  
+    1. Keeping the car as close as possible to a desired path (tracking error).  
+    2. Avoiding overly aggressive acceleration.
+  - **Receding Horizon:**  
+    At each time step, the controller predicts the best series of actions for the near future but only applies the very first action. Then, it recalculates at the next time step using the updated state, allowing the system to adjust in real time.
 
+- **Reference Trajectory:**
+  - A smooth path is generated from the user-drawn track using interpolation methods.
+  - This path tells the controller where the car should be and how fast it should be moving at every moment.
 
-- The **Reference Trajectory** is generated from a user-defined track via cubic spline interpolation. It provides the desired position and velocity along the path, parameterized by arc-length $s = v_{des} \cdot t$
-
-- The **MPC Problem** minimizes a cost function that balances state tracking (via $Q$ and $Q_f$) and control effort (via $R$) over a finite horizon, while respecting the system dynamics:
-  $M[k+1] = A\, M[k] + B\, C[k]$
-
-- The **Receding Horizon** strategy ensures that only immediate control actions are implemented, allowing the controller to continuously update its decisions based on new information.
-
-This framework enables robust, real-time trajectory tracking for the car, making the MPC controller well-suited for applications like autonomous vehicle path following.
+This approach enables the MPC controller to continuously update its decisions in real time, making it effective for keeping the car on track in applications like autonomous vehicle path following.
