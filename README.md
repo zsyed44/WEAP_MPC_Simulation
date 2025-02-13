@@ -4,6 +4,8 @@
 
 This repository contains a Python implementation of a Model Predictive Controller (MPC) that uses a graphical interface for users to draw a custom racetrack. The controller uses a 2D double integrator model to simulate a car following the user-defined track. The system predicts over a finite horizon using a receding-horizon strategy and visualizes the simulation through an animated Matplotlib plot.
 
+**If you are interested in the math and semantics behind the MPC model, check out the [THEORY.md](THEORY.md) file**
+
 ## Features:
 
 - **Interactive Track Drawing:**  
