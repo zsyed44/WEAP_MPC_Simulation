@@ -33,6 +33,12 @@ You can install the dependencies using pip:
 pip install numpy cvxpy matplotlib scipy
 ```
 
+Sometimes cvxpy doesn't install properly when done all together, if it doesn't, then run install it seperately:
+
+```bash
+pip install cvxpy
+```
+
 ## Running:
 
 You can run the file with python in the terminal, clone the repository and make sure you are in the root directory. Then run:
